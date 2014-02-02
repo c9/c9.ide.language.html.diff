@@ -402,24 +402,24 @@ define(function (require, exports, module) {
      * @param {Object} newSubtreeMap The nodeMap for the new subtree.
      */
     DOMUpdater.prototype._handleDeletions = function (nodeMap, oldSubtreeMap, newSubtreeMap) {
-        var deletedIDs = [];
-        Object.keys(oldSubtreeMap).forEach(function (key) {
-            if (!newSubtreeMap.hasOwnProperty(key)) {
-                deletedIDs.push(key);
-                delete nodeMap[key];
-            }
-        });
+        // var deletedIDs = [];
+        // Object.keys(oldSubtreeMap).forEach(function (key) {
+        //     if (!newSubtreeMap.hasOwnProperty(key)) {
+        //         deletedIDs.push(key);
+        //         delete nodeMap[key];
+        //     }
+        // });
         
-        if (deletedIDs.length) {
-            // FUTURE: would be better to cache the mark for each node. Also, could
-            // conceivably combine this with _updateMarkedRanges().
-            var marks = this.cm.getAllMarks();
-            marks.forEach(function (mark) {
-                if (mark.hasOwnProperty("tagID") && deletedIDs.indexOf(mark.tagID) !== -1) {
-                    mark.clear();
-                }
-            });
-        }
+        // if (deletedIDs.length) {
+        //     // FUTURE: would be better to cache the mark for each node. Also, could
+        //     // conceivably combine this with _updateMarkedRanges().
+        //     var marks = this.cm.getAllMarks();
+        //     marks.forEach(function (mark) {
+        //         if (mark.hasOwnProperty("tagID") && deletedIDs.indexOf(mark.tagID) !== -1) {
+        //             mark.clear();
+        //         }
+        //     });
+        // }
     };
     
     /**
@@ -472,7 +472,7 @@ define(function (require, exports, module) {
                     extend(this.previousDOM.nodeMap, newSubtree.nodeMap);
                     
                     // Update marked ranges for all items in the new subtree.
-                    this._updateMarkedRanges(newSubtree.nodeMap, markCache);
+                    // this._updateMarkedRanges(newSubtree.nodeMap, markCache);
                     
                     // Build a local nodeMap for the old subtree so the differ can
                     // use it.
