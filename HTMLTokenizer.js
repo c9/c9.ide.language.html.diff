@@ -138,7 +138,7 @@ define(function (require, exports, module) {
     }
     
     function _clonePos(pos, offset) {
-        return pos ? { line: pos.line, ch: pos.ch + (offset || 0)} : null;
+        return pos ? { row: pos.row, column: pos.column + (offset || 0)} : null;
     }
     
     /**
@@ -150,9 +150,9 @@ define(function (require, exports, module) {
         this._state = TEXT;
         this._buffer = text;
         this._sectionStart = 0;
-        this._sectionStartPos = {line: 0, ch: 0};
+        this._sectionStartPos = {row: 0, column: 0};
         this._index = 0;
-        this._indexPos = {line: 0, ch: 0};
+        this._indexPos = {row: 0, column: 0};
         this._special = 0; // 1 for script, 2 for style
         this._token = null;
         this._nextToken = null;
@@ -670,10 +670,10 @@ define(function (require, exports, module) {
             }
 
             if (c === "\n") {
-                this._indexPos.line++;
-                this._indexPos.ch = 0;
+                this._indexPos.row++;
+                this._indexPos.column = 0;
             } else {
-                this._indexPos.ch++;
+                this._indexPos.column++;
             }
             this._index++;
         }

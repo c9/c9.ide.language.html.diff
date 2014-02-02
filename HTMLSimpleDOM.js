@@ -216,20 +216,20 @@ define(function (require, exports, module) {
     /**
      * @private
      *
-     * Adds two {line, ch}-style positions, returning a new pos.
+     * Adds two {row, column}-style positions, returning a new pos.
      */
     function _addPos(pos1, pos2) {
-        return {line: pos1.line + pos2.line, ch: (pos2.line === 0 ? pos1.ch + pos2.ch : pos2.ch)};
+        return {row: pos1.row + pos2.row, column: (pos2.row === 0 ? pos1.column + pos2.column : pos2.column)};
     }
     
     /**
      * @private
      *
-     * Offsets the character offset of the given {line, ch} pos by the given amount and returns a new
+     * Offsets the character offset of the given {row, column} pos by the given amount and returns a new
      * pos. Not for general purpose use as it does not account for line boundaries.
      */
     function _offsetPos(pos, offset) {
-        return {line: pos.line, ch: pos.ch + offset};
+        return {row: pos.row, column: pos.column + offset};
     }
     
     /**
@@ -241,7 +241,7 @@ define(function (require, exports, module) {
      * 
      * @param {string} text The text to parse
      * @param {?int} startOffset starting offset in the text
-     * @param {?{line: int, ch: int}} startOffsetPos line/ch position in the text
+     * @param {?{row: int, column: int}} startOffsetPos row/column position in the text
      */
     function Builder(text, startOffset, startOffsetPos) {
         this.stack = [];
@@ -249,7 +249,7 @@ define(function (require, exports, module) {
         this.t = new Tokenizer(text);
         this.currentTag = null;
         this.startOffset = startOffset || 0;
-        this.startOffsetPos = startOffsetPos || {line: 0, ch: 0};
+        this.startOffsetPos = startOffsetPos || {row: 0, column: 0};
     }
 
     Builder.prototype._logError = function (token) {
@@ -467,7 +467,7 @@ define(function (require, exports, module) {
                 // tokenizer for this since it may not get to the very end)
                 // TODO: should probably make the tokenizer get to the end...
                 var lines = this.text.split("\n"),
-                    lastPos = {line: lines.length - 1, ch: lines[lines.length - 1].length};
+                    lastPos = {row: lines.length - 1, column: lines[lines.length - 1].length};
                 while (stack.length) {
                     closeTag(this.text.length, lastPos);
                 }

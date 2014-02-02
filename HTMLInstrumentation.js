@@ -53,7 +53,8 @@ define(function (require, exports, module) {
     "use strict";
     
     var extend = require("ace/lib/oop").mixin;
-    
+    var Range = require("ace/range").Range;
+    var comparePoints = Range.comparePoints;
     // var DocumentManager = require("document/DocumentManager"),
     var HTMLSimpleDOM   = require("./HTMLSimpleDOM"),
         HTMLDOMDiff     = require("./HTMLDOMDiff");
@@ -105,22 +106,23 @@ define(function (require, exports, module) {
      *     so the range doesn't need to be looked up again).
      */
     function _getSortedTagMarks(marks, markCache) {
-        marks = marks.filter(function (mark) {
-            return !!mark.tagID;
-        }).map(function (mark) {
-            // All marks should exist since we just got them from CodeMirror.
-            if (!markCache[mark.tagID]) {
-                markCache[mark.tagID] = {mark: mark, range: mark.find()};
-            }
-            return markCache[mark.tagID];
-        });
-        marks.sort(function (mark1, mark2) {
-            return (mark1.range.from.row === mark2.range.from.row ?
-                    mark1.range.from.column - mark2.range.from.column :
-                    mark1.range.from.row - mark2.range.from.row);
-        });
+        throw "not implemented";
+        // marks = marks.filter(function (mark) {
+        //     return !!mark.tagID;
+        // }).map(function (mark) {
+        //     // All marks should exist since we just got them from CodeMirror.
+        //     if (!markCache[mark.tagID]) {
+        //         markCache[mark.tagID] = {mark: mark, range: mark.find()};
+        //     }
+        //     return markCache[mark.tagID];
+        // });
+        // marks.sort(function (mark1, mark2) {
+        //     return (mark1.range.from.row === mark2.range.from.row ?
+        //             mark1.range.from.column - mark2.range.from.column :
+        //             mark1.range.from.row - mark2.range.from.row);
+        // });
         
-        return marks;
+        // return marks;
     }
     
     /**
@@ -136,31 +138,25 @@ define(function (require, exports, module) {
      * @return {Object} The CodeMirror mark object that represents the DOM node at the
      *     given position.
      */
-    function _getMarkerAtDocumentPos(session, pos, preferParent, markCache) {
-        var i, marks, match;
-        return
-        markCache = markCache || {};
-        marks = _getSortedTagMarks(session._codeMirror.findMarksAt(pos), markCache);
-        if (!marks.length) {
-            return null;
-        }
-        
-        // The mark with the latest start is the innermost one.
-        match = marks[marks.length - 1];
-        if (preferParent) {
-            // If the match is exactly at the edge of the range and preferParent is set,
-            // we want to pop upwards.
-            if (_posEq(match.range.from, pos) || _posEq(match.range.to, pos)) {
-                if (marks.length > 1) {
-                    match = marks[marks.length - 2];
-                } else {
-                    // We must be outside the root, so there's no containing tag.
-                    match = null;
-                }
+    function _getNodeAtDocumentPos(session, pos, preferParent, markCache) {
+        return findNode(session.dom, pos, preferParent);
+    }
+    
+    function findNode(node, pos, preferParent) {
+        var children = node && node.children || [];
+        for (var i = 0; i < children.length; i++) {
+            var ch = node.children[i];
+            if (!ch.children) continue;
+            var cmp = comparePoints(pos, ch.endPos);
+            if (cmp < 0) {
+                if (ch && comparePoints(pos, ch.startPos) > 0)
+                    return findNode(ch, pos, preferParent);
+                break;
             }
+            if (preferParent && cmp === 0)
+                return ch;
         }
-        
-        return match.mark;
+        return node;
     }
     
     /**
@@ -193,7 +189,7 @@ define(function (require, exports, module) {
      * @return {number} tagID at the specified position, or -1 if there is no tag
      */
     function _getTagIDAtDocumentPos(session, pos, markCache) {
-        var match = _getMarkerAtDocumentPos(session, pos, false, markCache);
+        var match = _getNodeAtDocumentPos(session, pos, false, markCache);
 
         return (match) ? match.tagID : -1;
     }
@@ -208,13 +204,14 @@ define(function (require, exports, module) {
      * @param {Object} node SimpleDOM node to use as the root for marking
      */
     function _markTags(cm, node) {
-        node.children.forEach(function (childNode) {
-            if (childNode.isElement()) {
-                _markTags(cm, childNode);
-            }
-        });
-        var mark = cm.markText(node.startPos, node.endPos);
-        mark.tagID = node.tagID;
+        throw "not implemented";
+        // node.children.forEach(function (childNode) {
+        //     if (childNode.isElement()) {
+        //         _markTags(cm, childNode);
+        //     }
+        // });
+        // var mark = cm.markText(node.startPos, node.endPos);
+        // mark.tagID = node.tagID;
     }
     
     /**
@@ -226,22 +223,6 @@ define(function (require, exports, module) {
     function _markTextFromDOM(session, dom) {
         session.dom = dom;
         console.log(dom);
-        return;
-        var cm = session._codeMirror;
-        
-        
-        // Remove existing marks
-        var marks = cm.getAllMarks();
-        cm.operation(function () {
-            marks.forEach(function (mark) {
-                if (mark.hasOwnProperty("tagID")) {
-                    mark.clear();
-                }
-            });
-        });
-                
-        // Mark
-        _markTags(cm, dom);
     }
     
     /**
@@ -275,17 +256,17 @@ define(function (require, exports, module) {
             // an incremental reparse of just the parent tag containing the edit. This should just
             // be the marked range that contains the beginning of the edit range, since that position
             // isn't changed by the edit.
-            if (!isDangerousEdit(changeList.text) && !isDangerousEdit(changeList.removed)) {
+            if (!isDangerousEdit(changeList.text || changeList.lines.join("\n"))) {
                 // If the edit is right at the beginning or end of a tag, we want to be conservative
                 // and use the parent as the edit range.
-                var startMark = _getMarkerAtDocumentPos(session, changeList.from, true);
-                if (startMark) {
-                    var range = startMark.find();
+                var startNode = _getNodeAtDocumentPos(session, changeList.range.start, true);
+                if (startNode) {
+                    var range = Range.fromPoints(startNode.startPos, startNode.endPos)
                     if (range) {
-                        text = session._codeMirror.getRange(range.from, range.to);
-                        this.changedTagID = startMark.tagID;
-                        startOffsetPos = range.from;
-                        startOffset = session._codeMirror.indexFromPos(startOffsetPos);
+                        text = session.getTextRange(range);
+                        this.changedTagID = startNode.tagID;
+                        startOffsetPos = startNode.startPos;
+                        startOffset = session.doc.positionToIndex(startOffsetPos);
                         this.isIncremental = true;
                     }
                 }
@@ -809,7 +790,7 @@ define(function (require, exports, module) {
 
     // private methods
     exports._markText                   = _markText;
-    exports._getMarkerAtDocumentPos     = _getMarkerAtDocumentPos;
+    exports._getNodeAtDocumentPos     = _getNodeAtDocumentPos;
     exports._getTagIDAtDocumentPos      = _getTagIDAtDocumentPos;
     exports._markTextFromDOM            = _markTextFromDOM;
     exports._updateDOM                  = _updateDOM;
