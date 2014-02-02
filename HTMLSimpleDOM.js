@@ -23,11 +23,13 @@
 
 
 /*jslint vars: true, plusplus: true, devel: true, nomen: true, indent: 4, maxerr: 50 */
-/*global define, $, CodeMirror */
+/*global define */
 /*unittests: HTML Instrumentation*/
 
 define(function (require, exports, module) {
     "use strict";
+    
+    var extend = require("ace/lib/oop").mixin;
     
     // var DocumentManager = require("document/DocumentManager"),
     var Tokenizer       = require("./HTMLTokenizer").Tokenizer,
@@ -130,7 +132,7 @@ define(function (require, exports, module) {
      * @param {Object} properties the properties provided will be set on the new object.
      */
     function SimpleNode(properties) {
-        $.extend(this, properties);
+        extend(this, properties);
     }
     
     SimpleNode.prototype = {

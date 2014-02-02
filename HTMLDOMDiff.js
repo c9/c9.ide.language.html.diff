@@ -23,12 +23,12 @@
 
 
 /*jslint vars: true, plusplus: true, devel: true, nomen: true, indent: 4, maxerr: 50 */
-/*global define, $, CodeMirror */
+/*global define */
 /*unittests: HTML Instrumentation*/
 
 define(function (require, exports, module) {
     "use strict";
-    
+    var extend = require("ace/lib/oop").mixin;
     /**
      * @private
      *
@@ -40,7 +40,7 @@ define(function (require, exports, module) {
      */
     function generateAttributeEdits(oldNode, newNode) {
         // shallow copy the old attributes object so that we can modify it
-        var oldAttributes = $.extend({}, oldNode.attributes),
+        var oldAttributes = extend({}, oldNode.attributes),
             newAttributes = newNode.attributes,
             edits = [];
         
