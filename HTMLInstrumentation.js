@@ -256,11 +256,14 @@ define(function (require, exports, module) {
             // an incremental reparse of just the parent tag containing the edit. This should just
             // be the marked range that contains the beginning of the edit range, since that position
             // isn't changed by the edit.
-            if (!isDangerousEdit(changeList.text || changeList.lines.join("\n"))) {
+            if (!changeList.lines && !isDangerousEdit(changeList.text || changeList.lines.join("\n"))) {
                 // If the edit is right at the beginning or end of a tag, we want to be conservative
                 // and use the parent as the edit range.
                 var startNode = _getNodeAtDocumentPos(session, changeList.range.start, true);
+                if (startNode.endPos.row == changeList.range.start.row) 
+                    startNode.endPos.column += changeList.text.length * (changeList.action[0]=="r"? -1 : 1);
                 if (startNode) {
+                    startNode.endPos
                     var range = Range.fromPoints(startNode.startPos, startNode.endPos)
                     if (range) {
                         text = session.getTextRange(range);
@@ -782,7 +785,7 @@ define(function (require, exports, module) {
 
     // private methods
     exports._markText                   = _markText;
-    exports._getNodeAtDocumentPos     = _getNodeAtDocumentPos;
+    exports._getNodeAtDocumentPos       = _getNodeAtDocumentPos;
     exports._getTagIDAtDocumentPos      = _getTagIDAtDocumentPos;
     exports._markTextFromDOM            = _markTextFromDOM;
     exports._updateDOM                  = _updateDOM;
