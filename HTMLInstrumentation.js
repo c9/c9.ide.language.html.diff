@@ -673,35 +673,27 @@ define(function (require, exports, module) {
      * @return {Object} Root DOM node of the document.
      */
     function scanDocument(session) {
-        if (!_cachedValues.hasOwnProperty(session.c9doc.tab.path)) {
-            session.on("change.htmlInstrumentation", function () {
-                if (_cachedValues[session.c9doc.tab.path]) {
-                    _cachedValues[session.c9doc.tab.path].dirty = true;
-                }
-            });
-            
-            // Assign to cache, but don't set a value yet
-            _cachedValues[session.c9doc.tab.path] = null;
+        var value = session.getValue();
+        var savedValue = session.c9doc.meta.$savedValue || value;
+        var savedDom = HTMLSimpleDOM.build(savedValue);
+
+        if (savedValue != value) {
+            session.dom = HTMLSimpleDOM.build(value);
+            savedDom.edits = HTMLDOMDiff.domdiff(savedDom, session.dom);
+        } else {
+            session.dom = savedDom;
         }
         
-        var cachedValue = _cachedValues[session.c9doc.tab.path];
-        if (!session.isDirty && cachedValue && !cachedValue.dirty && cachedValue.timestamp === session.c9doc.meta.timestamp) {
-            return cachedValue.dom;
-        }
-        
-        var text = session.getValue(),
-            dom = HTMLSimpleDOM.build(text);
-        
-        if (dom) {
+        if (session.dom) {
             // Cache results
             _cachedValues[session.c9doc.tab.path] = {
                 timestamp: session.c9doc.meta.timestamp,
-                dom: dom,
+                dom: savedDom,
                 dirty: false
             };
         }
         
-        return dom;
+        return savedDom;
     }
     
     /**
@@ -802,4 +794,5 @@ define(function (require, exports, module) {
     exports.scanDocument                = scanDocument;
     exports.generateInstrumentedHTML    = generateInstrumentedHTML;
     exports.getUnappliedEditList        = getUnappliedEditList;
+    
 });
