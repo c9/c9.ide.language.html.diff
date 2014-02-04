@@ -33,12 +33,12 @@
  *
  * During live HTML development, the HTML source code is parsed to identify tag boundaries.
  * Each tag is assigned an ID which is stored in markers that are inserted into the session.
- * These IDs are also included in "data-brackets-id" attributes that are inserted in the
+ * These IDs are also included in "data-cloud9-id" attributes that are inserted in the
  * HTML code that's served to the browser via the Live Development server.
  *
  * The primary function for that functionality is generateInstrumentedHTML(). This does just 
  * what it says - it will read the HTML content in the doc and generate instrumented code by 
- * injecting "data-brackets-id" attributes. Additionally, it caches the parsed DOM for use
+ * injecting "data-cloud9-id" attributes. Additionally, it caches the parsed DOM for use
  * by future updates.
  *
  * As the user makes edits in the session, we determine how the DOM structure should change
@@ -602,10 +602,10 @@ define(function (require, exports, module) {
             root;
         
         function _processElement(elem) {
-            elem.tagID = elem.attributes["data-brackets-id"];
+            elem.tagID = elem.attributes["data-cloud9-id"];
             
-            // remove data-brackets-id attribute for diff
-            delete elem.attributes["data-brackets-id"];
+            // remove data-cloud9-id attribute for diff
+            delete elem.attributes["data-cloud9-id"];
             
             elem.children.forEach(function (child) {
                 // set parent
@@ -705,8 +705,8 @@ define(function (require, exports, module) {
     
     /**
      * Generate instrumented HTML for the specified session's document, and mark the associated tag 
-     * ranges in the session. Each tag has a "data-brackets-id" attribute with a unique ID for its 
-     * value. For example, "<div>" becomes something like "<div data-brackets-id='45'>". The attribute 
+     * ranges in the session. Each tag has a "data-cloud9-id" attribute with a unique ID for its 
+     * value. For example, "<div>" becomes something like "<div data-cloud9-id='45'>". The attribute 
      * value is just a number that is guaranteed to be unique. 
      *
      * Also stores marks in the given session that correspond to the tag ranges. These marks are used
@@ -733,11 +733,11 @@ define(function (require, exports, module) {
         // Ensure that the marks in the session are up to date with respect to the given DOM.
         _markTextFromDOM(session, dom);
         
-        // Walk through the dom nodes and insert the 'data-brackets-id' attribute at the
+        // Walk through the dom nodes and insert the 'data-cloud9-id' attribute at the
         // end of the open tag        
         function walk(node) {
             if (node.tag) {
-                var attrText = " data-brackets-id='" + node.tagID + "'";
+                var attrText = " data-cloud9-id='" + node.tagID + "'";
                 
                 // Insert the attribute as the first attribute in the tag.
                 var insertIndex = node.start + node.tag.length + 1;
