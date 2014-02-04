@@ -678,25 +678,29 @@ define(function (require, exports, module) {
     function scanDocument(session) {
         var value = session.getValue();
         var savedValue = session.c9doc.meta.$savedValue || value;
-        var savedDom = HTMLSimpleDOM.build(savedValue);
+        if (!session.savedDom)
+            session.savedDom = HTMLSimpleDOM.build(savedValue);
 
         if (savedValue != value) {
-            session.dom = HTMLSimpleDOM.build(value);
-            savedDom.edits = HTMLDOMDiff.domdiff(savedDom, session.dom);
+            session.dom = session.savedDom;
+            var update = _updateDOM(session.savedDom, session);
+            session.dom = update.dom;
+            update.dom = session.savedDom;
         } else {
-            session.dom = savedDom;
+            session.dom = session.savedDom;
+            update = {dom : session.savedDom};
         }
         
         if (session.dom) {
             // Cache results
             _cachedValues[session.c9doc.tab.path] = {
                 timestamp: session.c9doc.meta.timestamp,
-                dom: savedDom,
+                dom: session.dom,
                 dirty: false
             };
         }
         
-        return savedDom;
+        return update;
     }
     
     /**
