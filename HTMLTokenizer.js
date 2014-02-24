@@ -494,17 +494,19 @@ define(function (require, exports, module) {
             * special tags
             */
             } else if (this._state === SPECIAL) {
-                var re;
-                switch (this._special) {
-                    case "c": re =/<\/script *>/ig; break;
-                    case "t": re =/<\/style *>/ig ; break;
-                    case "e": re =/<\/textarea/ig ; break;
+                if (c === "<") {
+                    var re;
+                    switch (this._special) {
+                        case "c": re =/^\/script[ >]/i; break;
+                        case "t": re =/^\/style[ >]/i ; break;
+                        case "e": re =/^\/textarea[ >]/i ; break;
+                    }
+                    var m = re.exec(this._buffer.substring(this._index + 1, this._index + 15));
+                    if (m) {
+                        this._state = TEXT;
+                        continue;
+                    }
                 }
-                re.lastIndex = this._index;
-                var m = re.exec(this._buffer);
-                this._index = m ? m.index : this._buffer.length - 1;
-                this._state = TEXT;
-                continue;
             } else {
                 console.error("HTMLTokenizer: Encountered unknown state");
                 this._emitSpecialToken("error");
