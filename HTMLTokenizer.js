@@ -76,28 +76,7 @@ define(function (require, exports, module) {
         AFTER_CDATA_2 = i++, // ]
     
         //special tags
-        BEFORE_SPECIAL = i++, //S
-        BEFORE_SPECIAL_END = i++,   //S
-    
-        BEFORE_SCRIPT_1 = i++, //C
-        BEFORE_SCRIPT_2 = i++, //R
-        BEFORE_SCRIPT_3 = i++, //I
-        BEFORE_SCRIPT_4 = i++, //P
-        BEFORE_SCRIPT_5 = i++, //T
-        AFTER_SCRIPT_1 = i++, //C
-        AFTER_SCRIPT_2 = i++, //R
-        AFTER_SCRIPT_3 = i++, //I
-        AFTER_SCRIPT_4 = i++, //P
-        AFTER_SCRIPT_5 = i++, //T
-    
-        BEFORE_STYLE_1 = i++, //T
-        BEFORE_STYLE_2 = i++, //Y
-        BEFORE_STYLE_3 = i++, //L
-        BEFORE_STYLE_4 = i++, //E
-        AFTER_STYLE_1 = i++, //T
-        AFTER_STYLE_2 = i++, //Y
-        AFTER_STYLE_3 = i++, //L
-        AFTER_STYLE_4 = i++; //E
+        SPECIAL = i++; //S
 
     /**
      * @private
@@ -208,9 +187,6 @@ define(function (require, exports, module) {
                     } else if (c === "?") {
                         this._state = IN_PROCESSING_INSTRUCTION;
                         this._startSection(1);
-                    } else if (c === "s" || c === "S") {
-                        this._state = BEFORE_SPECIAL;
-                        this._startSection();
                     } else if (!isLegalInTagName(c)) {
                         this._emitSpecialToken("error");
                         break;
@@ -227,8 +203,15 @@ define(function (require, exports, module) {
                 } else if (c === ">") {
                     this._emitToken("opentagname");
                     this._emitSpecialToken("opentagend", this._index + 1, _clonePos(this._indexPos, 1));
-                    this._state = TEXT;
-                    this._startSection(1);
+                    var name = this._token && this._token.contents;
+                    if (/^s(?:cript|tyle)|textarea$/i.test(name)) {
+                        this._state = SPECIAL;
+                        this._startSection(1);
+                        this._special = name[1];
+                    } else {
+                        this._state = TEXT;
+                        this._startSection(1);
+                    }
                 } else if (isWhitespace(c)) {
                     this._emitToken("opentagname");
                     this._state = BEFORE_ATTRIBUTE_NAME;
@@ -239,13 +222,6 @@ define(function (require, exports, module) {
             } else if (this._state === BEFORE_CLOSING_TAG_NAME) {
                 if (c === ">") {
                     this._state = TEXT;
-                } else if (this._special > 0) {
-                    if (c === "s" || c === "S") {
-                        this._state = BEFORE_SPECIAL_END;
-                    } else {
-                        this._state = TEXT;
-                        continue;
-                    }
                 } else if (!isLegalInTagName(c)) {
                     this._emitSpecialToken("error");
                     break;
@@ -517,152 +493,18 @@ define(function (require, exports, module) {
             /*
             * special tags
             */
-            } else if (this._state === BEFORE_SPECIAL) {
-                if (c === "c" || c === "C") {
-                    this._state = BEFORE_SCRIPT_1;
-                } else if (c === "t" || c === "T") {
-                    this._state = BEFORE_STYLE_1;
-                } else {
-                    this._state = IN_TAG_NAME;
-                    continue; //consume the token again
+            } else if (this._state === SPECIAL) {
+                var re;
+                switch (this._special) {
+                    case "c": re =/<\/script *>/ig; break;
+                    case "t": re =/<\/style *>/ig ; break;
+                    case "e": re =/<\/textarea/ig ; break;
                 }
-            } else if (this._state === BEFORE_SPECIAL_END) {
-                if (this._special === 1 && (c === "c" || c === "C")) {
-                    this._state = AFTER_SCRIPT_1;
-                } else if (this._special === 2 && (c === "t" || c === "T")) {
-                    this._state = AFTER_STYLE_1;
-                } else {
-                    this._state = TEXT;
-                }
-            
-    
-            /*
-            * script
-            */
-            } else if (this._state === BEFORE_SCRIPT_1) {
-                if (c === "r" || c === "R") {
-                    this._state = BEFORE_SCRIPT_2;
-                } else {
-                    this._state = IN_TAG_NAME;
-                    continue; //consume the token again
-                }
-            } else if (this._state === BEFORE_SCRIPT_2) {
-                if (c === "i" || c === "I") {
-                    this._state = BEFORE_SCRIPT_3;
-                } else {
-                    this._state = IN_TAG_NAME;
-                    continue; //consume the token again
-                }
-            } else if (this._state === BEFORE_SCRIPT_3) {
-                if (c === "p" || c === "P") {
-                    this._state = BEFORE_SCRIPT_4;
-                } else {
-                    this._state = IN_TAG_NAME;
-                    continue; //consume the token again
-                }
-            } else if (this._state === BEFORE_SCRIPT_4) {
-                if (c === "t" || c === "T") {
-                    this._state = BEFORE_SCRIPT_5;
-                } else {
-                    this._state = IN_TAG_NAME;
-                    continue; //consume the token again
-                }
-            } else if (this._state === BEFORE_SCRIPT_5) {
-                if (c === "/" || c === ">" || isWhitespace(c)) {
-                    this._special = 1;
-                }
-                this._state = IN_TAG_NAME;
-                continue; //consume the token again
-            } else if (this._state === AFTER_SCRIPT_1) {
-                if (c === "r" || c === "R") {
-                    this._state = AFTER_SCRIPT_2;
-                } else {
-                    this._state = TEXT;
-                }
-            } else if (this._state === AFTER_SCRIPT_2) {
-                if (c === "i" || c === "I") {
-                    this._state = AFTER_SCRIPT_3;
-                } else {
-                    this._state = TEXT;
-                }
-            } else if (this._state === AFTER_SCRIPT_3) {
-                if (c === "p" || c === "P") {
-                    this._state = AFTER_SCRIPT_4;
-                } else {
-                    this._state = TEXT;
-                }
-            } else if (this._state === AFTER_SCRIPT_4) {
-                if (c === "t" || c === "T") {
-                    this._state = AFTER_SCRIPT_5;
-                } else {
-                    this._state = TEXT;
-                }
-            } else if (this._state === AFTER_SCRIPT_5) {
-                if (c === ">" || isWhitespace(c)) {
-                    this._state = IN_CLOSING_TAG_NAME;
-                    this._startSection(-6);
-                    continue; //reconsume the token
-                } else {
-                    this._state = TEXT;
-                }
-            
-    
-            /*
-            * style
-            */
-            } else if (this._state === BEFORE_STYLE_1) {
-                if (c === "y" || c === "Y") {
-                    this._state = BEFORE_STYLE_2;
-                } else {
-                    this._state = IN_TAG_NAME;
-                    continue; //consume the token again
-                }
-            } else if (this._state === BEFORE_STYLE_2) {
-                if (c === "l" || c === "L") {
-                    this._state = BEFORE_STYLE_3;
-                } else {
-                    this._state = IN_TAG_NAME;
-                    continue; //consume the token again
-                }
-            } else if (this._state === BEFORE_STYLE_3) {
-                if (c === "e" || c === "E") {
-                    this._state = BEFORE_STYLE_4;
-                } else {
-                    this._state = IN_TAG_NAME;
-                    continue; //consume the token again
-                }
-            } else if (this._state === BEFORE_STYLE_4) {
-                if (c === "/" || c === ">" || isWhitespace(c)) {
-                    this._special = 2;
-                }
-                this._state = IN_TAG_NAME;
-                continue; //consume the token again
-            } else if (this._state === AFTER_STYLE_1) {
-                if (c === "y" || c === "Y") {
-                    this._state = AFTER_STYLE_2;
-                } else {
-                    this._state = TEXT;
-                }
-            } else if (this._state === AFTER_STYLE_2) {
-                if (c === "l" || c === "L") {
-                    this._state = AFTER_STYLE_3;
-                } else {
-                    this._state = TEXT;
-                }
-            } else if (this._state === AFTER_STYLE_3) {
-                if (c === "e" || c === "E") {
-                    this._state = AFTER_STYLE_4;
-                } else {
-                    this._state = TEXT;
-                }
-            } else if (this._state === AFTER_STYLE_4) {
-                if (c === ">" || isWhitespace(c)) {
-                    this._state = IN_CLOSING_TAG_NAME;
-                    this._startSection(-5);
-                    continue; //reconsume the token
-                } else {
-                    this._state = TEXT;
-                }
+                re.lastIndex = this._index;
+                var m = re.exec(this._buffer);
+                this._index = m ? m.index : this._buffer.length - 1;
+                this._state = TEXT;
+                continue;
             } else {
                 console.error("HTMLTokenizer: Encountered unknown state");
                 this._emitSpecialToken("error");
