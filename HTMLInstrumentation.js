@@ -55,11 +55,9 @@ define(function (require, exports, module) {
     var extend = require("ace/lib/oop").mixin;
     var Range = require("ace/range").Range;
     var comparePoints = Range.comparePoints;
-    // var DocumentManager = require("document/DocumentManager"),
-    var HTMLSimpleDOM   = require("./HTMLSimpleDOM"),
-        HTMLDOMDiff     = require("./HTMLDOMDiff");
-        // PerfUtils       = require("utils/PerfUtils");
-    
+    var HTMLSimpleDOM   = require("./HTMLSimpleDOM");
+    var HTMLDOMDiff     = require("./HTMLDOMDiff");
+
     var allowIncremental = true;
     
     // Hash of scanned documents. Key is the full path of the doc. Value is an object
@@ -438,14 +436,14 @@ define(function (require, exports, module) {
      *      If the document can't be parsed due to invalid HTML, returns null.
      */
     DOMUpdater.prototype.update = function () {
-        var markCache = {},
-            newSubtree = this.build(true, markCache),
-            result = {
-                // default result if we didn't identify a changed portion
-                newDOM: newSubtree,
-                oldSubtree: this.previousDOM,
-                newSubtree: newSubtree
-            };
+        var markCache = {};
+        var newSubtree = this.build(true, markCache);
+        var result = {
+            // default result if we didn't identify a changed portion
+            newDOM: newSubtree,
+            oldSubtree: this.previousDOM,
+            newSubtree: newSubtree
+        };
         
         if (!newSubtree) {
             return null;
@@ -680,7 +678,10 @@ define(function (require, exports, module) {
         var savedValue = session.c9doc.meta.$savedValue || value;
         if (!session.savedDom)
             session.savedDom = HTMLSimpleDOM.build(savedValue);
-
+        
+        if (session.savedDom.tag != "html")
+            return {errors : ["root tag isn't html"]}
+        
         if (savedValue != value) {
             session.dom = session.savedDom;
             var update = _updateDOM(session.savedDom, session);

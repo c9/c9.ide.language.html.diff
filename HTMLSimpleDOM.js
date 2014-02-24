@@ -38,11 +38,11 @@ define(function (require, exports, module) {
             markStart: function(){},
             finalizeMeasurement: function(){},
             addMeasurement: function(){}
-        }
+        };
     
     var seed = Math.floor(Math.random() * 65535);
     
-    var tagID = 1;
+    var tagID = 5; // 1, 2, 3 reserved for html head body
     
     /**
      * A list of tags whose start causes any of a given set of immediate parent
@@ -338,7 +338,7 @@ define(function (require, exports, module) {
                 // the marks in the document may be misleading. If a tag ID has been reused,
                 // we apply a new tag ID to ensure that our edits come out correctly.
                 if (nodeMap[newTag.tagID]) {
-                    newTag.tagID = this.getNewID();
+                    newTag.tagID = this.getNewID(newTag);
                 }
                 
                 nodeMap[newTag.tagID] = newTag;
@@ -495,7 +495,15 @@ define(function (require, exports, module) {
      *
      * @return {int} unique tag ID
      */
-    Builder.prototype.getNewID = function () {
+    Builder.prototype.getNewID = function (newTag) {
+        if (newTag) {
+            if (newTag.tag == "html")
+                return 1;
+            if (newTag.tag == "body")
+                return 3;
+            if (newTag.tag == "head")
+                return 2;
+        }
         return tagID++;
     };
     
