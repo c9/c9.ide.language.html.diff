@@ -678,13 +678,11 @@ define(function (require, exports, module) {
         var savedValue = session.c9doc.meta.$savedValue || value;
         if (!session.savedDom)
             session.savedDom = HTMLSimpleDOM.build(savedValue);
-        
-        if (session.savedDom.tag != "html")
-            return {errors : ["root tag isn't html"]}
-        
+
+        var update;
         if (savedValue != value) {
             session.dom = session.savedDom;
-            var update = _updateDOM(session.savedDom, session);
+            update = _updateDOM(session.savedDom, session);
             session.dom = update.dom;
             update.dom = session.savedDom;
         } else {
@@ -700,6 +698,67 @@ define(function (require, exports, module) {
                 dirty: false
             };
         }
+        
+        return update;
+    }
+    
+    function syncTagIds(session) {
+        var value = session.getValue();
+        var savedValue = session.c9doc.meta.$savedValue || value;
+        if (!session.savedDom)
+            session.savedDom = HTMLSimpleDOM.build(savedValue);
+
+        if (!session.savedDom)
+            return {errors: []};
+        
+        var update;    
+        if (savedValue != value) {
+            session.dom = session.savedDom;
+            update = _updateDOM(session.savedDom, session);
+            session.dom = update.dom;
+            update.dom = session.savedDom;
+        } else {
+            session.dom = session.savedDom;
+            update = {dom : session.savedDom};
+        }
+        
+        if (session.dom) {
+            // Cache results
+            _cachedValues[session.c9doc.tab.path] = {
+                timestamp: session.c9doc.meta.timestamp,
+                dom: session.dom,
+                dirty: false
+            };
+        }
+        
+        var tagID = 5;
+        function getNewID(newTag) {
+            if (newTag) {
+                if (newTag.tag == "html")
+                    return 1;
+                if (newTag.tag == "body")
+                    return 3;
+                if (newTag.tag == "head")
+                    return 2;
+            }
+            return tagID++;
+        }
+        
+        var idMap = {};
+        function walk(node) {
+            if (!node.children)
+                return;
+            var defaultId = getNewID(node);
+            if (node.tagID != defaultId) {
+                idMap[defaultId] = node.tagID;
+            }
+            node.children && node.children.forEach(walk);
+        }
+        
+        walk(session.savedDom);
+        
+        update.dom = null;
+        update.idMap = idMap; 
         
         return update;
     }
@@ -722,6 +781,7 @@ define(function (require, exports, module) {
     exports._resetCache                 = _resetCache;
     
     // public API
+    exports.syncTagIds                  = syncTagIds;
     exports.scanDocument                = scanDocument;
     exports.generateInstrumentedHTML    = HTMLSimpleDOM.generateInstrumentedHTML;
     exports.getUnappliedEditList        = getUnappliedEditList;
