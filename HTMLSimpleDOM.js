@@ -29,7 +29,12 @@
 define(function (require, exports, module) {
     "use strict";
     
-    var extend = require("ace/lib/oop").mixin;
+    var extend = function(obj, mixin) {
+        for (var key in mixin) {
+            obj[key] = mixin[key];
+        }
+        return obj;
+    };
     
     // var DocumentManager = require("document/DocumentManager"),
     var Tokenizer       = require("./HTMLTokenizer").Tokenizer,
@@ -559,10 +564,64 @@ define(function (require, exports, module) {
         return result;
     }
     
+    /**
+     * Generate instrumented HTML for the specified session's document, and mark the associated tag 
+     * ranges in the session. Each tag has a "data-cloud9-id" attribute with a unique ID for its 
+     * value. For example, "<div>" becomes something like "<div data-cloud9-id='45'>". The attribute 
+     * value is just a number that is guaranteed to be unique. 
+     *
+     * Also stores marks in the given session that correspond to the tag ranges. These marks are used
+     * to track the DOM structure for in-browser highlighting and live HTML updating.
+     *
+     * This only needs to be done once on load of a document. As the document is edited in memory,
+     * the instrumentation is kept up to date via the diffs and edits that are generated on change
+     * events. Call this again only if you want to do a full re-sync of the session's DOM state.
+     *
+     * @param {session} session The session whose document we're instrumenting, and which we should
+     *     mark ranges in.
+     * @return {string} instrumented html content
+     */
+    function generateInstrumentedHTML(text) {
+        console.log(text)
+        tagID = 5;
+        var builder = new Builder(text);
+        var dom = builder.build();
+        var orig = text;
+        var gen = "";
+        var lastIndex = 0;
+        
+        if (!dom) {
+            return text;
+        }
+        
+        // Walk through the dom nodes and insert the 'data-cloud9-id' attribute at the
+        // end of the open tag
+        function walk(node) {
+            if (node.tag) {
+                var attrText = " data-cloud9-id='" + node.tagID + "'";
+                
+                // Insert the attribute as the first attribute in the tag.
+                var insertIndex = node.start + node.tag.length + 1;
+                gen += orig.substr(lastIndex, insertIndex - lastIndex) + attrText;
+                lastIndex = insertIndex;
+            }
+            
+            if (node.isElement()) {
+                node.children.forEach(walk);
+            }
+        }
+        
+        walk(dom);
+        gen += orig.substr(lastIndex);
+        
+        return gen;
+    }
+    
     // Public API
     exports.build                       = build;
     exports.Builder                     = Builder;
     exports.SimpleNode                  = SimpleNode;
+    exports.generateInstrumentedHTML    = generateInstrumentedHTML;
     
     // Private API
     exports._dumpDOM                    = _dumpDOM;

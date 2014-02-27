@@ -705,82 +705,6 @@ define(function (require, exports, module) {
     }
     
     /**
-     * Generate instrumented HTML for the specified session's document, and mark the associated tag 
-     * ranges in the session. Each tag has a "data-cloud9-id" attribute with a unique ID for its 
-     * value. For example, "<div>" becomes something like "<div data-cloud9-id='45'>". The attribute 
-     * value is just a number that is guaranteed to be unique. 
-     *
-     * Also stores marks in the given session that correspond to the tag ranges. These marks are used
-     * to track the DOM structure for in-browser highlighting and live HTML updating.
-     *
-     * This only needs to be done once on load of a document. As the document is edited in memory,
-     * the instrumentation is kept up to date via the diffs and edits that are generated on change
-     * events. Call this again only if you want to do a full re-sync of the session's DOM state.
-     *
-     * @param {session} session The session whose document we're instrumenting, and which we should
-     *     mark ranges in.
-     * @return {string} instrumented html content
-     */
-    function generateInstrumentedHTML(session) {
-        var dom = scanDocument(session),
-            orig = session.getValue(),
-            gen = "",
-            lastIndex = 0;
-        
-        if (!dom) {
-            return null;
-        }
-        
-        // Ensure that the marks in the session are up to date with respect to the given DOM.
-        _markTextFromDOM(session, dom);
-        
-        // Walk through the dom nodes and insert the 'data-cloud9-id' attribute at the
-        // end of the open tag        
-        function walk(node) {
-            if (node.tag) {
-                var attrText = " data-cloud9-id='" + node.tagID + "'";
-                
-                // Insert the attribute as the first attribute in the tag.
-                var insertIndex = node.start + node.tag.length + 1;
-                gen += orig.substr(lastIndex, insertIndex - lastIndex) + attrText;
-                lastIndex = insertIndex;
-            }
-            
-            if (node.isElement()) {
-                node.children.forEach(walk);
-            }
-        }
-        
-        walk(dom);
-        gen += orig.substr(lastIndex);
-        
-        return gen;
-    }
-    
-    /**
-     * Mark the text for the specified session. Either scanDocument() or 
-     * generateInstrumentedHTML() must be called before this function
-     * is called.
-     *
-     * NOTE: This function is "private" for now (has a leading underscore), since
-     * the API is likely to change in the future.
-     *
-     * @param {session} session The session whose text should be marked.
-     * @return none
-     */
-    function _markText(session) {
-        var cache = _cachedValues[session.c9doc.tab.path],
-            dom = cache && cache.dom;
-        
-        if (!dom) {
-            console.error("Couldn't find the dom for " + session.c9doc.tab.path);
-            return;
-        }
-        
-        _markTextFromDOM(session, dom);
-    }
-    
-    /**
      * @private
      * Clear the DOM cache. For unit testing only.
      */
@@ -789,7 +713,6 @@ define(function (require, exports, module) {
     }
 
     // private methods
-    exports._markText                   = _markText;
     exports._getNodeAtDocumentPos       = _getNodeAtDocumentPos;
     exports._getTagIDAtDocumentPos      = _getTagIDAtDocumentPos;
     exports._markTextFromDOM            = _markTextFromDOM;
@@ -800,7 +723,7 @@ define(function (require, exports, module) {
     
     // public API
     exports.scanDocument                = scanDocument;
-    exports.generateInstrumentedHTML    = generateInstrumentedHTML;
+    exports.generateInstrumentedHTML    = HTMLSimpleDOM.generateInstrumentedHTML;
     exports.getUnappliedEditList        = getUnappliedEditList;
     
 });
