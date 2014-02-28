@@ -58,27 +58,6 @@ define(function (require, exports, module) {
     var HTMLSimpleDOM   = require("./HTMLSimpleDOM");
     var HTMLDOMDiff     = require("./HTMLDOMDiff");
 
-    var allowIncremental = true;
-    
-    // Hash of scanned documents. Key is the full path of the doc. Value is an object
-    // with two properties: timestamp and dom. Timestamp is the document timestamp,
-    // dom is the root node of a simple DOM tree.
-    var _cachedValues = {};
-
-    /** 
-     * @private
-     * Removes the cached information (DOM, timestamp, etc.) used by HTMLInstrumentation
-     * for the given document.
-     * @param {$.Event} event (unused)
-     * @param {Document} document The document to clear from the cache.
-     */
-    function _removeDocFromCache(evt, session) {
-        if (_cachedValues.hasOwnProperty(session.c9doc.tab.path)) {
-            delete _cachedValues[session.c9doc.tab.path];
-            $(session).off(".htmlInstrumentation");
-        }
-    }
-    
     /**
      * @private
      * Checks if two CodeMirror-style {row, column} positions are equal.
@@ -152,7 +131,7 @@ define(function (require, exports, module) {
                 break;
             }
             if (preferParent && cmp === 0)
-                return ch;
+                return node;
         }
         return node;
     }
@@ -236,53 +215,51 @@ define(function (require, exports, module) {
      *     edits are not structural, DOMUpdater will do a fast incremental reparse. If not provided,
      *     or if one of the edits changes the DOM structure, DOMUpdater will reparse the whole DOM.
      */
-    function DOMUpdater(previousDOM, session, changeList) {
+    function DOMUpdater(previousDOM, session, delta) {
         var text, startOffset = 0, startOffsetPos;
 
         this.isIncremental = false;
         
-        function isDangerousEdit(text) {
-            // We don't consider & dangerous since entities only affect text content, not
-            // overall DOM structure.
-            return (/[<>\/=\"\']/).test(text);
-        }
+        if (previousDOM && delta) 
+            updatePositions(previousDOM, delta);
         
-        // If there's more than one change, be conservative and assume we have to do a full reparse.
-        if (changeList && !changeList.next) {
-            // If the inserted or removed text doesn't have any characters that could change the
-            // structure of the DOM (e.g. by adding or removing a tag boundary), then we can do
-            // an incremental reparse of just the parent tag containing the edit. This should just
-            // be the marked range that contains the beginning of the edit range, since that position
-            // isn't changed by the edit.
-            if (!changeList.lines && !isDangerousEdit(changeList.text || changeList.lines.join("\n"))) {
-                // If the edit is right at the beginning or end of a tag, we want to be conservative
-                // and use the parent as the edit range.
-                var startNode = _getNodeAtDocumentPos(session, changeList.range.start, true);
-                if (startNode.endPos.row == changeList.range.start.row) 
-                    startNode.endPos.column += changeList.text.length * (changeList.action[0]=="r"? -1 : 1);
-                if (startNode) {
-                    startNode.endPos
-                    var range = Range.fromPoints(startNode.startPos, startNode.endPos)
-                    if (range) {
-                        text = session.getTextRange(range);
-                        this.changedTagID = startNode.tagID;
-                        startOffsetPos = startNode.startPos;
-                        startOffset = session.doc.positionToIndex(startOffsetPos);
-                        this.isIncremental = true;
-                    }
+        // If the inserted or removed text doesn't have any characters that could change the
+        // structure of the DOM (e.g. by adding or removing a tag boundary), then we can do
+        // an incremental reparse of just the parent tag containing the edit. This should just
+        // be the marked range that contains the beginning of the edit range, since that position
+        // isn't changed by the edit.
+        if (delta && !isDangerousEdit(delta.text || delta.lines.join("\n"))) {
+            // If the edit is right at the beginning or end of a tag, we want to be conservative
+            // and use the parent as the edit range.
+            var startNode = _getNodeAtDocumentPos(session, delta.range.start, true);
+            if (startNode) {
+                var range = Range.fromPoints(startNode.startPos, startNode.endPos);
+                if (range) {
+                    text = session.getTextRange(range);
+                    this.changedTagID = startNode.tagID;
+                    startOffsetPos = startNode.startPos;
+                    startOffset = session.doc.positionToIndex(startOffsetPos);
+                    this.isIncremental = true;
                 }
             }
         }
         
+        
         if (!this.changedTagID) {
             // We weren't able to incrementally update, so just rebuild and diff everything.
             text = session.getValue();
-        }
+        } 
         
         HTMLSimpleDOM.Builder.call(this, text, startOffset, startOffsetPos);
         this.session = session;
         this.cm = session._codeMirror;
         this.previousDOM = previousDOM;
+    }
+    
+    function isDangerousEdit(text) {
+        // We don't consider & dangerous since entities only affect text content, not
+        // overall DOM structure.
+        return (/[<>\/=\"\']/).test(text);
     }
     
     DOMUpdater.prototype = Object.create(HTMLSimpleDOM.Builder.prototype);
@@ -403,13 +380,13 @@ define(function (require, exports, module) {
      * @param {Object} newSubtreeMap The nodeMap for the new subtree.
      */
     DOMUpdater.prototype._handleDeletions = function (nodeMap, oldSubtreeMap, newSubtreeMap) {
-        // var deletedIDs = [];
-        // Object.keys(oldSubtreeMap).forEach(function (key) {
-        //     if (!newSubtreeMap.hasOwnProperty(key)) {
-        //         deletedIDs.push(key);
-        //         delete nodeMap[key];
-        //     }
-        // });
+        var deletedIDs = [];
+        Object.keys(oldSubtreeMap).forEach(function (key) {
+            if (!newSubtreeMap.hasOwnProperty(key)) {
+                deletedIDs.push(key);
+                delete nodeMap[key];
+            }
+        });
         
         // if (deletedIDs.length) {
         //     // FUTURE: would be better to cache the mark for each node. Also, could
@@ -518,17 +495,14 @@ define(function (require, exports, module) {
      *     session, and an array of edits that can be applied to update the browser (see
      *     HTMLDOMDiff for more information on the edit format).
      */
-    function _updateDOM(previousDOM, session, changeList) {
-        if (!allowIncremental) {
-            changeList = undefined;
-        }
-        var updater = new DOMUpdater(previousDOM, session, changeList);
+    function _updateDOM(previousDOM, session, delta, onlyDom) {
+        var updater = new DOMUpdater(previousDOM, session, delta);
         var result = updater.update();
         if (!result) {
             return { errors: updater.errors };
         }
         
-        var edits = HTMLDOMDiff.domdiff(result.oldSubtree, result.newSubtree);
+        var edits = onlyDom || HTMLDOMDiff.domdiff(result.oldSubtree, result.newSubtree);
         
         // We're done with the nodeMap that was added to the subtree by the updater.
         if (result.newSubtree !== result.newDOM) {
@@ -540,6 +514,62 @@ define(function (require, exports, module) {
             edits: edits,
             _wasIncremental: updater.isIncremental // for unit tests only
         };
+    }
+    
+    function updatePositions(dom, delta) {
+        var start = delta.range.start;
+        var end = delta.range.end;
+        var sign = delta.action[0] == "i" ? 1 : -1;
+        var rowChange = sign * (end.row - start.row);
+        var columnChange = sign * (end.column - start.column);
+        
+        function update(pos) {
+            if (pos.row == (sign == -1 ? end.row : start.row))
+                pos.column += columnChange;
+            if (rowChange)
+                pos.row += rowChange;
+        }
+        function walk(node) {
+            if (!node.children) 
+                return;
+            var sp = node.startPos;
+            var ep = node.endPos;
+            
+            if (sign === 1) {
+                var cmpStartPos = comparePoints(start, sp);
+                if (cmpStartPos < 0) {
+                    update(sp);
+                    update(ep);
+                    if (!rowChange && sp.row > start.row)
+                        return;
+                } else {
+                    var cmpEndPos = comparePoints(start, ep);
+                    if (cmpEndPos < 0) {
+                        update(ep);
+                    } else {
+                        return;
+                    }
+                }
+            } else {
+                var cmp = comparePoints(end, sp);
+                if (cmp <= 0) {
+                    update(sp);
+                    update(ep);
+                    if (!rowChange && sp.row > end.row)
+                        return;
+                } else {
+                    cmp = comparePoints(start, ep);
+                    if (cmp <= 0) {
+                        update(ep);
+                    } else {
+                        return;
+                    }
+                }
+            }
+            
+            return node.children.some(walk);
+        }
+        walk(dom);
     }
     
     /**
@@ -564,27 +594,16 @@ define(function (require, exports, module) {
      * @return {Array} edits A list of edits to apply in the browser. See HTMLDOMDiff for
      *     more information on the format of these edits.
      */
-    function getUnappliedEditList(session, changeList) {
-        var cachedValue = _cachedValues[session.c9doc.tab.path];
-        
-        // We might not have a previous DOM if the document was empty before this edit.
-        if (!cachedValue || !cachedValue.dom || _cachedValues[session.c9doc.tab.path].invalid) {
-            // We were in an invalid state, so do a full rebuild.
-            changeList = null;
-        }
-        
-        var result = _updateDOM(cachedValue && cachedValue.dom, session, changeList);
+    function getUnappliedEditList(session, delta) {
+        var dom = session.dom;
+        var result = _updateDOM(dom, session, delta);
         
         if (!result.errors) {
-            _cachedValues[session.c9doc.tab.path] = {
-                timestamp: session.c9doc.meta.timestamp,
-                dom: result.dom,
-                dirty: false
-            };
+            session.dom = result.dom;
             return { edits: result.edits };
         } else {
-            if (cachedValue) {
-                cachedValue.invalid = true;
+            if (dom) {
+                dom.invalid = true;
             }
             return { errors: result.errors };
         }
@@ -645,8 +664,7 @@ define(function (require, exports, module) {
      * @param {Object} browserSimpleDOM
      */
     function _getBrowserDiff(session, browserSimpleDOM) {
-        var cachedValue = _cachedValues[session.c9doc.tab.path],
-            sessionRoot  = cachedValue.dom,
+        var sessionRoot  = session.dom,
             browserRoot;
         
         browserRoot = _processBrowserSimpleDOM(browserSimpleDOM, sessionRoot.tagID);
@@ -689,16 +707,7 @@ define(function (require, exports, module) {
             session.dom = session.savedDom;
             update = {dom : session.savedDom};
         }
-        
-        if (session.dom) {
-            // Cache results
-            _cachedValues[session.c9doc.tab.path] = {
-                timestamp: session.c9doc.meta.timestamp,
-                dom: session.dom,
-                dirty: false
-            };
-        }
-        
+
         return update;
     }
     
@@ -711,38 +720,30 @@ define(function (require, exports, module) {
         if (!session.savedDom)
             return {errors: []};
         
-        var update;    
-        if (savedValue != value) {
+        var update = {};
+        if (savedValue != value && !session.dom) {
             session.dom = session.savedDom;
+            var history = session.c9doc.undoManager.getState();
+            var items = history.stack.slice(history.mark + 1, history.position + 1);
+            items.forEach(function(itemgroup) {
+                itemgroup.forEach(function(item) {
+                    if (item.group == "doc" && item.deltas) {
+                        item.deltas.forEach(function(delta) {
+                            updatePositions(session.savedDom, delta);
+                        });
+                    }
+                });
+            });
             update = _updateDOM(session.savedDom, session);
             session.dom = update.dom;
-            update.dom = session.savedDom;
+        } else if (session.dom) {
+            var edits = HTMLDOMDiff.domdiff(session.savedDom, session.dom);
+            update.edits = edits;
         } else {
             session.dom = session.savedDom;
-            update = {dom : session.savedDom};
         }
-        
-        if (session.dom) {
-            // Cache results
-            _cachedValues[session.c9doc.tab.path] = {
-                timestamp: session.c9doc.meta.timestamp,
-                dom: session.dom,
-                dirty: false
-            };
-        }
-        
-        var tagID = 5;
-        function getNewID(newTag) {
-            if (newTag) {
-                if (newTag.tag == "html")
-                    return 1;
-                if (newTag.tag == "body")
-                    return 3;
-                if (newTag.tag == "head")
-                    return 2;
-            }
-            return tagID++;
-        }
+
+        var getNewID = HTMLSimpleDOM.Builder.newIdGenerator();
         
         var idMap = {};
         function walk(node) {
@@ -763,23 +764,13 @@ define(function (require, exports, module) {
         return update;
     }
     
-    /**
-     * @private
-     * Clear the DOM cache. For unit testing only.
-     */
-    function _resetCache() {
-        _cachedValues = {};
-    }
-
     // private methods
     exports._getNodeAtDocumentPos       = _getNodeAtDocumentPos;
     exports._getTagIDAtDocumentPos      = _getTagIDAtDocumentPos;
     exports._markTextFromDOM            = _markTextFromDOM;
     exports._updateDOM                  = _updateDOM;
-    exports._allowIncremental           = allowIncremental;
     exports._getBrowserDiff             = _getBrowserDiff;
-    exports._resetCache                 = _resetCache;
-    
+
     // public API
     exports.syncTagIds                  = syncTagIds;
     exports.scanDocument                = scanDocument;

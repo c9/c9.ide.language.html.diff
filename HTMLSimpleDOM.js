@@ -47,8 +47,6 @@ define(function (require, exports, module) {
     
     var seed = Math.floor(Math.random() * 65535);
     
-    var tagID = 5; // 1, 2, 3 reserved for html head body
-    
     /**
      * A list of tags whose start causes any of a given set of immediate parent
      * tags to close. This mostly comes from the HTML5 spec section on omitted close tags:
@@ -495,22 +493,27 @@ define(function (require, exports, module) {
         return dom;
     };
     
+    Builder.newIdGenerator = function () {
+        var tagID = 5; // 1, 2, 3 reserved for html head body
+        return function (newTag) {
+            if (newTag) {
+                if (newTag.tag == "html")
+                    return 1;
+                if (newTag.tag == "body")
+                    return 3;
+                if (newTag.tag == "head")
+                    return 2;
+            }
+            return tagID++;
+        };
+    };
+    
     /**
      * Returns a new tag ID.
      *
      * @return {int} unique tag ID
      */
-    Builder.prototype.getNewID = function (newTag) {
-        if (newTag) {
-            if (newTag.tag == "html")
-                return 1;
-            if (newTag.tag == "body")
-                return 3;
-            if (newTag.tag == "head")
-                return 2;
-        }
-        return tagID++;
-    };
+    Builder.prototype.getNewID = Builder.newIdGenerator();
     
     /**
      * Returns the best tag ID for the new tag object given. 
@@ -582,9 +585,8 @@ define(function (require, exports, module) {
      * @return {string} instrumented html content
      */
     function generateInstrumentedHTML(text) {
-        console.log(text)
-        tagID = 5;
         var builder = new Builder(text);
+        builder.getID = builder.getNewID = Builder.newIdGenerator();
         var dom = builder.build();
         var orig = text;
         var gen = "";
