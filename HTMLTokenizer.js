@@ -522,9 +522,14 @@ define(function (require, exports, module) {
             this._index++;
         }
         
-        if (this._index === this._buffer.length && this._state !== TEXT) {
+        if (this._index === this._buffer.length) {
             // We hit EOF in the middle of processing something else.
-            this._emitSpecialToken("error");
+            if (this._state !== TEXT)
+                this._emitSpecialToken("error");
+            else if (typeof process == "undefined"){
+                 // debugger
+                 // this._emitTokenIfNonempty("text");
+            } ;
         }
         return this._token;
     };

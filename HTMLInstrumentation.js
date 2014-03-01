@@ -598,13 +598,13 @@ define(function (require, exports, module) {
         var dom = session.dom;
         var result = _updateDOM(dom, session, delta);
         
-        if (!result.errors) {
+        if (dom && result.errors) {
+            dom.invalid = true;
+        }
+        if (result.dom) {
             session.dom = result.dom;
             return { edits: result.edits };
         } else {
-            if (dom) {
-                dom.invalid = true;
-            }
             return { errors: result.errors };
         }
     }
@@ -718,12 +718,15 @@ define(function (require, exports, module) {
             session.savedDom = HTMLSimpleDOM.build(savedValue);
 
         if (!session.savedDom)
-            return {errors: []};
+            return {errors: ["save"]};
         
         var update = {};
         if (savedValue != value && !session.dom) {
             session.dom = session.savedDom;
+            
             var history = session.c9doc.undoManager.getState();
+            if (history.mark < 0)
+                return {errors: ["save"]};
             var items = history.stack.slice(history.mark + 1, history.position + 1);
             items.forEach(function(itemgroup) {
                 itemgroup.forEach(function(item) {

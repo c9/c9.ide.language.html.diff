@@ -30,9 +30,9 @@ define(function (require, exports, module) {
     "use strict";
     
     var extend = function(obj, mixin) {
-        for (var key in mixin) {
+        Object.keys(mixin).forEach(function(key) {
             obj[key] = mixin[key];
-        }
+        });
         return obj;
     };
     
@@ -392,12 +392,11 @@ define(function (require, exports, module) {
                             break;
                         }
                     }
-                    if (strict && i !== stack.length - 1) {
-                        // If we're in strict mode, treat unbalanced tags as invalid.
-                        PerfUtils.finalizeMeasurement(timerBuildFull);
-                        PerfUtils.addMeasurement(timerBuildPart);
+                    if (i !== stack.length - 1) {
                         this._logError(token);
-                        return null;
+                        // If we're in strict mode, treat unbalanced tags as invalid.
+                        if (strict)
+                            return null;
                     }
                     if (i >= 0) {
                         do {
@@ -415,10 +414,10 @@ define(function (require, exports, module) {
                     } else {
                         // If we're in strict mode, treat unmatched close tags as invalid. Otherwise
                         // we just silently ignore them.
+                        this._logError(token);
                         if (strict) {
                             PerfUtils.finalizeMeasurement(timerBuildFull);
                             PerfUtils.addMeasurement(timerBuildPart);
-                            this._logError(token);
                             return null;
                         }
                     }
@@ -460,10 +459,10 @@ define(function (require, exports, module) {
         // If we have any tags hanging open (e.g. html or body), fail the parse if we're in strict mode,
         // otherwise close them at the end of the document.
         if (stack.length) {
+            this._logError(token);
             if (strict) {
                 PerfUtils.finalizeMeasurement(timerBuildFull);
                 PerfUtils.addMeasurement(timerBuildPart);
-                this._logError(token);
                 return null;
             } else {
                 // Manually compute the position of the end of the text (we can't rely on the
