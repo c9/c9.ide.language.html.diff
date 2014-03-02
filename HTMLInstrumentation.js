@@ -692,9 +692,6 @@ define(function (require, exports, module) {
         if (savedValue != value && !session.dom) {
             session.dom = session.savedDom;
             
-            var history = session.c9doc.undoManager.getState();
-            if (history.mark < 0)
-                return {errors: ["save"]};
             getDeltaList(savedValue, value).forEach(function(delta) {
                 updatePositions(session.savedDom, delta);
             });
