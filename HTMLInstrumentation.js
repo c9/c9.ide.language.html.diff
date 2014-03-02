@@ -383,7 +383,7 @@ define(function (require, exports, module) {
      */
     DOMUpdater.prototype.update = function () {
         var markCache = {};
-        var newSubtree = this.build(true, markCache);
+        var newSubtree = this.build(!true, markCache);
         var result = {
             // default result if we didn't identify a changed portion
             newDOM: newSubtree,
@@ -479,6 +479,7 @@ define(function (require, exports, module) {
         }
         
         return {
+            errors: updater.errors,
             dom: result.newDOM,
             edits: edits,
             _wasIncremental: updater.isIncremental // for unit tests only
@@ -568,14 +569,12 @@ define(function (require, exports, module) {
         var result = _updateDOM(dom, session, delta);
         
         if (dom && result.errors) {
-            dom.invalid = true;
+            dom.errors = result.errors;
         }
         if (result.dom) {
             session.dom = result.dom;
-            return { edits: result.edits };
-        } else {
-            return { errors: result.errors };
         }
+        return result;
     }
     
     /**

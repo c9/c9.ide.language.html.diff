@@ -524,12 +524,11 @@ define(function (require, exports, module) {
         
         if (this._index === this._buffer.length) {
             // We hit EOF in the middle of processing something else.
-            if (this._state !== TEXT)
+            if (this._state !== TEXT) {
                 this._emitSpecialToken("error");
-            else if (typeof process == "undefined"){
-                 // debugger
-                 // this._emitTokenIfNonempty("text");
-            } ;
+            } else {
+                this._emitTokenIfNonempty("text");
+            }
         }
         return this._token;
     };
@@ -615,7 +614,7 @@ define(function (require, exports, module) {
      * @param {string} type The token's type (see documentation for `nextToken()`)
      */
     Tokenizer.prototype._emitTokenIfNonempty = function (type) {
-        if (this._index > this._sectionStart) {
+        if (this._index > this._sectionStart && this._sectionStart != -1) {
             this._setToken(type);
         }
         this._sectionStart = -1;
