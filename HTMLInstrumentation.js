@@ -727,15 +727,8 @@ define(function (require, exports, module) {
             var history = session.c9doc.undoManager.getState();
             if (history.mark < 0)
                 return {errors: ["save"]};
-            var items = history.stack.slice(history.mark + 1, history.position + 1);
-            items.forEach(function(itemgroup) {
-                itemgroup.forEach(function(item) {
-                    if (item.group == "doc" && item.deltas) {
-                        item.deltas.forEach(function(delta) {
-                            updatePositions(session.savedDom, delta);
-                        });
-                    }
-                });
+            getDeltaList(savedValue, value).forEach(function(delta) {
+                updatePositions(session.savedDom, delta);
             });
             update = _updateDOM(session.savedDom, session);
             session.dom = update.dom;
@@ -766,6 +759,52 @@ define(function (require, exports, module) {
         
         return update;
     }
+
+    function getDeltaList(v1, v2) {
+        var DiffMatchPatch = require("plugins/c9.ide.threewaymerge/diff_match_patch_amd").diff_match_patch;
+        var dfm = new DiffMatchPatch();
+
+        var row = 0, column = 0;
+        var deltas = [];
+        
+        dfm.diff_main(v1, v2).forEach(function(change) {
+            var text = change[1];
+            var lines = text.split(/\r\n|\r|\n/);
+            var colCh = lines[lines.length - 1].length;
+            var rowCh = lines.length - 1;
+            var endRow = row + rowCh;
+            var endColumn = colCh;
+            if (!rowCh) {
+                endColumn = column + colCh; 
+            }
+             
+            if (change[0] === 0) {
+                row = endRow;
+                column = endColumn;
+            }
+            else if (change[0] == -1) {
+                deltas.push({
+                    range: new Range(row, column, endRow, endColumn),
+                    lines: rowCh && lines,
+                    text: !rowCh && text,
+                    action: rowCh ? "removeLines" : "removeText"
+                });
+            }
+            else if (change[0] == 1) {
+                deltas.push({
+                    range: new Range(row, column, endRow, endColumn),
+                    lines: rowCh && lines,
+                    text: !rowCh && text,
+                    action: rowCh ? "insertLines" : "insertText"
+                });
+                row = endRow;
+                column = endColumn;
+            }
+        });
+        
+        return deltas;
+    }
+
     
     // private methods
     exports._getNodeAtDocumentPos       = _getNodeAtDocumentPos;
