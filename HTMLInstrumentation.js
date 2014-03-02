@@ -172,37 +172,6 @@ define(function (require, exports, module) {
     }
     
     /**
-     * Recursively walks the SimpleDOM starting at node and marking
-     * all tags in the CodeMirror instance. The more useful interface
-     * is the _markTextFromDOM function which clears existing marks
-     * before calling this function to create new ones.
-     *
-     * @param {CodeMirror} cm CodeMirror instance in which to mark tags
-     * @param {Object} node SimpleDOM node to use as the root for marking
-     */
-    function _markTags(cm, node) {
-        throw "not implemented";
-        // node.children.forEach(function (childNode) {
-        //     if (childNode.isElement()) {
-        //         _markTags(cm, childNode);
-        //     }
-        // });
-        // var mark = cm.markText(node.startPos, node.endPos);
-        // mark.tagID = node.tagID;
-    }
-    
-    /**
-     * Clears the marks from the document and creates new ones.
-     *
-     * @param {session} session session object holding this document
-     * @param {Object} dom SimpleDOM root object that contains the parsed structure
-     */
-    function _markTextFromDOM(session, dom) {
-        session.dom = dom;
-        console.log(dom);
-    }
-    
-    /**
      * @constructor
      * Subclass of HTMLSimpleDOM.Builder that builds an updated DOM after changes have been made,
      * and maps nodes from the new DOM to the old DOM by tag ID. For non-structural edits, avoids reparsing
@@ -472,7 +441,7 @@ define(function (require, exports, module) {
                 }
             }
         } else {
-            _markTextFromDOM(this.session, result.newDOM);
+            this.session.dom = result.newDOM;
         }
         
         return result;
@@ -495,14 +464,14 @@ define(function (require, exports, module) {
      *     session, and an array of edits that can be applied to update the browser (see
      *     HTMLDOMDiff for more information on the edit format).
      */
-    function _updateDOM(previousDOM, session, delta, onlyDom) {
+    function _updateDOM(previousDOM, session, delta) {
         var updater = new DOMUpdater(previousDOM, session, delta);
         var result = updater.update();
         if (!result) {
             return { errors: updater.errors };
         }
         
-        var edits = onlyDom || HTMLDOMDiff.domdiff(result.oldSubtree, result.newSubtree);
+        var edits = HTMLDOMDiff.domdiff(result.oldSubtree, result.newSubtree);
         
         // We're done with the nodeMap that was added to the subtree by the updater.
         if (result.newSubtree !== result.newDOM) {
@@ -809,7 +778,6 @@ define(function (require, exports, module) {
     // private methods
     exports._getNodeAtDocumentPos       = _getNodeAtDocumentPos;
     exports._getTagIDAtDocumentPos      = _getTagIDAtDocumentPos;
-    exports._markTextFromDOM            = _markTextFromDOM;
     exports._updateDOM                  = _updateDOM;
     exports._getBrowserDiff             = _getBrowserDiff;
 
