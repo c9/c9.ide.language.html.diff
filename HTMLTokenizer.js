@@ -198,22 +198,22 @@ define(function (require, exports, module) {
             } else if (this._state === IN_TAG_NAME) {
                 if (c === "/") {
                     this._emitToken("opentagname");
+                    this._checkSpecial();
                     this._emitSpecialToken("selfclosingtag", this._index + 2, _clonePos(this._indexPos, 2));
                     this._state = AFTER_SELFCLOSE_SLASH;
                 } else if (c === ">") {
                     this._emitToken("opentagname");
+                    this._checkSpecial();
                     this._emitSpecialToken("opentagend", this._index + 1, _clonePos(this._indexPos, 1));
-                    var name = this._token && this._token.contents;
-                    if (/^s(?:cript|tyle)|textarea$/i.test(name)) {
-                        this._state = SPECIAL;
-                        this._startSection(1);
-                        this._special = name[1];
+                    if (this._special) {
+                        this._startSpecial();
                     } else {
                         this._state = TEXT;
                         this._startSection(1);
                     }
                 } else if (isWhitespace(c)) {
                     this._emitToken("opentagname");
+                    this._checkSpecial();
                     this._state = BEFORE_ATTRIBUTE_NAME;
                 } else if (!isLegalInTagName(c)) {
                     this._emitSpecialToken("error");
@@ -269,7 +269,11 @@ define(function (require, exports, module) {
                 if (c === ">") {
                     this._state = TEXT;
                     this._emitSpecialToken("opentagend", this._index + 1, _clonePos(this._indexPos, 1));
-                    this._startSection(1);
+                    if (this._special) {
+                        this._startSpecial();
+                    } else {
+                        this._startSection(1);
+                    }
                 } else if (c === "/") {
                     this._emitSpecialToken("selfclosingtag", this._index + 2, _clonePos(this._indexPos, 2));
                     this._state = AFTER_SELFCLOSE_SLASH;
@@ -336,8 +340,12 @@ define(function (require, exports, module) {
                 if (c === ">") {
                     this._emitToken("attribvalue");
                     this._emitSpecialToken("opentagend", this._index + 1, _clonePos(this._indexPos, 1));
-                    this._state = TEXT;
-                    this._startSection(1);
+                    if (this._special) {
+                        this._startSpecial();
+                    } else {
+                        this._state = TEXT;
+                        this._startSection(1);
+                    }
                 } else if (isWhitespace(c)) {
                     this._emitToken("attribvalue");
                     this._state = BEFORE_ATTRIBUTE_NAME;
@@ -351,7 +359,11 @@ define(function (require, exports, module) {
                 if (c === ">") {
                     this._state = TEXT;
                     this._emitSpecialToken("opentagend", this._index + 1, _clonePos(this._indexPos, 1));
-                    this._startSection(1);
+                    if (this._special) {
+                        this._startSpecial();
+                    } else {
+                        this._startSection(1);
+                    }
                 } else if (c === "/") {
                     this._emitSpecialToken("selfclosingtag", this._index + 2, _clonePos(this._indexPos, 2));
                     this._state = AFTER_SELFCLOSE_SLASH;
@@ -531,6 +543,22 @@ define(function (require, exports, module) {
             }
         }
         return this._token;
+    };
+    
+        
+    Tokenizer.prototype._checkSpecial = function() {
+        var name = this._token && this._token.contents;
+        if (/^s(?:cript|tyle)|textarea$/i.test(name)) {
+            this._special = name[1];
+            return true;
+        }
+        return false;
+    };
+    
+    Tokenizer.prototype._startSpecial = function() {
+        this._state = SPECIAL;
+        this._startSection(1);
+        return true;
     };
     
     Tokenizer.prototype._startSection = function (offset) {
