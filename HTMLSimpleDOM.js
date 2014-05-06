@@ -37,9 +37,9 @@ define(function (require, exports, module) {
     };
     
     // var DocumentManager = require("document/DocumentManager"),
-    var Tokenizer       = require("./HTMLTokenizer").Tokenizer,
-        MurmurHash3     = require("./murmurhash3_gc"),
-        PerfUtils       = { //require("utils/PerfUtils");
+    var Tokenizer = require("./HTMLTokenizer").Tokenizer,
+        MurmurHash3 = require("./murmurhash3_gc"),
+        PerfUtils = { //require("utils/PerfUtils");
             markStart: function(){},
             finalizeMeasurement: function(){},
             addMeasurement: function(){}
@@ -54,47 +54,47 @@ define(function (require, exports, module) {
      * This doesn't handle general content model violations.
      */
     var openImpliesClose = {
-        li      : { li: true },
-        dt      : { dd: true, dt: true },
-        dd      : { dd: true, dt: true },
-        address : { p: true },
-        article : { p: true },
-        aside   : { p: true },
-        blockquote : { p: true },
-        dir     : { p: true },
-        div     : { p: true },
-        dl      : { p: true },
+        li: { li: true },
+        dt: { dd: true, dt: true },
+        dd: { dd: true, dt: true },
+        address: { p: true },
+        article: { p: true },
+        aside: { p: true },
+        blockquote: { p: true },
+        dir: { p: true },
+        div: { p: true },
+        dl: { p: true },
         fieldset: { p: true },
-        footer  : { p: true },
-        form    : { p: true },
+        footer: { p: true },
+        form: { p: true },
         h1      : { p: true },
         h2      : { p: true },
         h3      : { p: true },
         h4      : { p: true },
         h5      : { p: true },
         h6      : { p: true },
-        header  : { p: true },
-        hgroup  : { p: true },
-        hr      : { p: true },
-        main    : { p: true },
-        menu    : { p: true },
-        nav     : { p: true },
-        ol      : { p: true },
-        p       : { p: true },
-        pre     : { p: true },
-        section : { p: true },
-        table   : { p: true },
-        ul      : { p: true },
-        rt      : { rp: true, rt: true },
-        rp      : { rp: true, rt: true },
+        header: { p: true },
+        hgroup: { p: true },
+        hr: { p: true },
+        main: { p: true },
+        menu: { p: true },
+        nav: { p: true },
+        ol: { p: true },
+        p: { p: true },
+        pre: { p: true },
+        section: { p: true },
+        table: { p: true },
+        ul: { p: true },
+        rt: { rp: true, rt: true },
+        rp: { rp: true, rt: true },
         optgroup: { optgroup: true, option: true },
-        option  : { option: true },
-        tbody   : { thead: true, tbody: true, tfoot: true },
-        tfoot   : { tbody: true },
-        tr      : { tr: true, th: true, td: true },
-        th      : { th: true, td: true },
-        td      : { thead: true, th: true, td: true },
-        body    : { head: true, link: true, script: true }
+        option: { option: true },
+        tbody: { thead: true, tbody: true, tfoot: true },
+        tfoot: { tbody: true },
+        tr: { tr: true, th: true, td: true },
+        th: { th: true, td: true },
+        td: { thead: true, th: true, td: true },
+        body: { head: true, link: true, script: true }
     };
 
     /**
@@ -256,9 +256,9 @@ define(function (require, exports, module) {
     }
 
     Builder.prototype._logError = function (token) {
-        var error       = { token: token },
-            startPos    = token ? (token.startPos || token.endPos) : this.startOffsetPos,
-            endPos      = token ? token.endPos : this.startOffsetPos;
+        var error = { token: token },
+            startPos = token ? (token.startPos || token.endPos) : this.startOffsetPos,
+            endPos = token ? token.endPos : this.startOffsetPos;
         
         error.startPos = _addPos(this.startOffsetPos, startPos);
         error.endPos = _addPos(this.startOffsetPos, endPos);
@@ -619,14 +619,14 @@ define(function (require, exports, module) {
     }
     
     // Public API
-    exports.build                       = build;
-    exports.Builder                     = Builder;
-    exports.SimpleNode                  = SimpleNode;
-    exports.generateInstrumentedHTML    = generateInstrumentedHTML;
+    exports.build = build;
+    exports.Builder = Builder;
+    exports.SimpleNode = SimpleNode;
+    exports.generateInstrumentedHTML = generateInstrumentedHTML;
     
     // Private API
-    exports._dumpDOM                    = _dumpDOM;
-    exports._offsetPos                  = _offsetPos;
-    exports._getTextNodeID              = getTextNodeID;
-    exports._seed                       = seed;
+    exports._dumpDOM = _dumpDOM;
+    exports._offsetPos = _offsetPos;
+    exports._getTextNodeID = getTextNodeID;
+    exports._seed = seed;
 });

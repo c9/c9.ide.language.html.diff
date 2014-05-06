@@ -55,8 +55,8 @@ define(function (require, exports, module) {
     var extend = require("ace/lib/oop").mixin;
     var Range = require("ace/range").Range;
     var comparePoints = Range.comparePoints;
-    var HTMLSimpleDOM   = require("./HTMLSimpleDOM");
-    var HTMLDOMDiff     = require("./HTMLDOMDiff");
+    var HTMLSimpleDOM = require("./HTMLSimpleDOM");
+    var HTMLDOMDiff = require("./HTMLDOMDiff");
 
     /**
      * @private
@@ -583,7 +583,7 @@ define(function (require, exports, module) {
      * @param {Object} root
      */
     function _processBrowserSimpleDOM(browserRoot, sessionRootTagID) {
-        var nodeMap         = {},
+        var nodeMap = {},
             root;
         
         function _processElement(elem) {
@@ -632,15 +632,15 @@ define(function (require, exports, module) {
      * @param {Object} browserSimpleDOM
      */
     function _getBrowserDiff(session, browserSimpleDOM) {
-        var sessionRoot  = session.dom,
+        var sessionRoot = session.dom,
             browserRoot;
         
         browserRoot = _processBrowserSimpleDOM(browserSimpleDOM, sessionRoot.tagID);
         
         return {
-            diff    : HTMLDOMDiff.domdiff(sessionRoot, browserRoot),
-            browser : browserRoot,
-            session  : sessionRoot
+            diff: HTMLDOMDiff.domdiff(sessionRoot, browserRoot),
+            browser: browserRoot,
+            session: sessionRoot
         };
     }
     
@@ -772,15 +772,15 @@ define(function (require, exports, module) {
 
     
     // private methods
-    exports._getNodeAtDocumentPos       = _getNodeAtDocumentPos;
-    exports._getTagIDAtDocumentPos      = _getTagIDAtDocumentPos;
-    exports._updateDOM                  = _updateDOM;
-    exports._getBrowserDiff             = _getBrowserDiff;
+    exports._getNodeAtDocumentPos = _getNodeAtDocumentPos;
+    exports._getTagIDAtDocumentPos = _getTagIDAtDocumentPos;
+    exports._updateDOM = _updateDOM;
+    exports._getBrowserDiff = _getBrowserDiff;
 
     // public API
-    exports.syncTagIds                  = syncTagIds;
-    exports.scanDocument                = scanDocument;
-    exports.generateInstrumentedHTML    = HTMLSimpleDOM.generateInstrumentedHTML;
-    exports.getUnappliedEditList        = getUnappliedEditList;
+    exports.syncTagIds = syncTagIds;
+    exports.scanDocument = scanDocument;
+    exports.generateInstrumentedHTML = HTMLSimpleDOM.generateInstrumentedHTML;
+    exports.getUnappliedEditList = getUnappliedEditList;
     
 });
