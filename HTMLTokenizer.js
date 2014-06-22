@@ -549,7 +549,7 @@ define(function (require, exports, module) {
     Tokenizer.prototype._checkSpecial = function() {
         var name = this._token && this._token.contents;
         if (/^s(?:cript|tyle)|textarea$/i.test(name)) {
-            this._special = name[1];
+            this._special = name[1].toLowerCase();
             return true;
         }
         return false;
