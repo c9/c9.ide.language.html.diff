@@ -186,18 +186,23 @@ define(function (require, exports, module) {
      */
     function DOMUpdater(previousDOM, session, delta) {
         var text, startOffset = 0, startOffsetPos;
-
+        
         this.isIncremental = false;
         
-        if (previousDOM && delta) 
-            updatePositions(previousDOM, delta);
+        if (delta) {
+            text = delta.text;
+            if (typeof text != "string")
+                text = delta.lines.join("\n");
+            if (previousDOM) 
+                updatePositions(previousDOM, delta);
+        }
         
         // If the inserted or removed text doesn't have any characters that could change the
         // structure of the DOM (e.g. by adding or removing a tag boundary), then we can do
         // an incremental reparse of just the parent tag containing the edit. This should just
         // be the marked range that contains the beginning of the edit range, since that position
         // isn't changed by the edit.
-        if (delta && !isDangerousEdit(delta.text || delta.lines.join("\n"))) {
+        if (text && !isDangerousEdit(text)) {
             // If the edit is right at the beginning or end of a tag, we want to be conservative
             // and use the parent as the edit range.
             var startNode = _getNodeAtDocumentPos(session, delta.range.start, true);
