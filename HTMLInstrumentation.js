@@ -205,7 +205,7 @@ define(function (require, exports, module) {
         if (text && !isDangerousEdit(text)) {
             // If the edit is right at the beginning or end of a tag, we want to be conservative
             // and use the parent as the edit range.
-            var startNode = _getNodeAtDocumentPos(session, delta.range.start, true);
+            var startNode = _getNodeAtDocumentPos(session, delta.start, true);
             if (startNode) {
                 var range = Range.fromPoints(startNode.startPos, startNode.endPos);
                 if (range) {
@@ -492,8 +492,8 @@ define(function (require, exports, module) {
     }
     
     function updatePositions(dom, delta) {
-        var start = delta.range.start;
-        var end = delta.range.end;
+        var start = delta.start;
+        var end = delta.end;
         var sign = delta.action[0] == "i" ? 1 : -1;
         var rowChange = sign * (end.row - start.row);
         var columnChange = sign * (end.column - start.column);
@@ -754,18 +754,18 @@ define(function (require, exports, module) {
             }
             else if (change[0] == -1) {
                 deltas.push({
-                    range: new Range(row, column, endRow, endColumn),
-                    lines: rowCh && lines,
-                    text: !rowCh && text,
-                    action: rowCh ? "removeLines" : "removeText"
+                    start: {row: row, column: column},
+                    end: {row: endRow, column: endColumn},
+                    lines: lines,
+                    action: "remove"
                 });
             }
             else if (change[0] == 1) {
                 deltas.push({
-                    range: new Range(row, column, endRow, endColumn),
-                    lines: rowCh && lines,
-                    text: !rowCh && text,
-                    action: rowCh ? "insertLines" : "insertText"
+                    start: {row: row, column: column},
+                    end: {row: endRow, column: endColumn},
+                    lines: lines,
+                    action: "insert"
                 });
                 row = endRow;
                 column = endColumn;
