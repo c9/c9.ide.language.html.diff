@@ -8,13 +8,11 @@
         "type": "git",
         "url": "http://github.com/c9/c9.ide.language.html.diff.git"
     },
-    "plugins": {
-        "plugin": {}
-    },
+    "plugins": {},
     "categories": [
         "core"
     ],
     "licenses": [
-        ""
+        "AGPL"
     ]
 }
