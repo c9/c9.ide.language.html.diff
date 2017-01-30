@@ -678,7 +678,7 @@ define(function (require, exports, module) {
             update.dom = session.savedDom;
         } else {
             session.dom = session.savedDom;
-            update = {dom : session.savedDom};
+            update = { dom: session.savedDom };
         }
 
         return update;
@@ -691,7 +691,7 @@ define(function (require, exports, module) {
             session.savedDom = HTMLSimpleDOM.build(savedValue);
 
         if (!session.savedDom)
-            return {errors: ["save"]};
+            return { errors: ["save"]};
         
         var update = {};
         if (savedValue != value && !session.dom) {
@@ -754,16 +754,16 @@ define(function (require, exports, module) {
             }
             else if (change[0] == -1) {
                 deltas.push({
-                    start: {row: row, column: column},
-                    end: {row: endRow, column: endColumn},
+                    start: { row: row, column: column },
+                    end: { row: endRow, column: endColumn },
                     lines: lines,
                     action: "remove"
                 });
             }
             else if (change[0] == 1) {
                 deltas.push({
-                    start: {row: row, column: column},
-                    end: {row: endRow, column: endColumn},
+                    start: { row: row, column: column },
+                    end: { row: endRow, column: endColumn },
                     lines: lines,
                     action: "insert"
                 });

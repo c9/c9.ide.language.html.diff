@@ -71,7 +71,7 @@ define(function (require, exports, module) {
         BEFORE_CDATA_4 = i++, // A
         BEFORE_CDATA_5 = i++, // T
         BEFORE_CDATA_6 = i++, // A
-        IN_CDATA = i++,// [
+        IN_CDATA = i++, // [
         AFTER_CDATA_1 = i++, // ]
         AFTER_CDATA_2 = i++, // ]
     
@@ -117,7 +117,7 @@ define(function (require, exports, module) {
     }
     
     function _clonePos(pos, offset) {
-        return pos ? { row: pos.row, column: pos.column + (offset || 0)} : null;
+        return pos ? { row: pos.row, column: pos.column + (offset || 0) } : null;
     }
     
     /**
@@ -129,9 +129,9 @@ define(function (require, exports, module) {
         this._state = TEXT;
         this._buffer = text;
         this._sectionStart = 0;
-        this._sectionStartPos = {row: 0, column: 0};
+        this._sectionStartPos = { row: 0, column: 0 };
         this._index = 0;
-        this._indexPos = {row: 0, column: 0};
+        this._indexPos = { row: 0, column: 0 };
         this._special = 0; // 1 for script, 2 for style
         this._token = null;
         this._nextToken = null;
@@ -509,9 +509,9 @@ define(function (require, exports, module) {
                 if (c === "<") {
                     var re;
                     switch (this._special) {
-                        case "c": re =/^\/script[ >]/i; break;
-                        case "t": re =/^\/style[ >]/i ; break;
-                        case "e": re =/^\/textarea[ >]/i ; break;
+                        case "c": re = /^\/script[ >]/i; break;
+                        case "t": re = /^\/style[ >]/i ; break;
+                        case "e": re = /^\/textarea[ >]/i ; break;
                     }
                     var m = re.exec(this._buffer.substring(this._index + 1, this._index + 15));
                     if (m) {

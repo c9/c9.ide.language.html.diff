@@ -34,8 +34,8 @@ var MurmurHash3 = {
 		var roundedEnd = len & ~0x3;
 
 		for (var i = 0; i < roundedEnd; i += 4) {
-			var k1 = (data.charCodeAt(i)     & 0xff)        |
-				((data.charCodeAt(i + 1) & 0xff) << 8)  |
+			var k1 = (data.charCodeAt(i) & 0xff) |
+				((data.charCodeAt(i + 1) & 0xff) << 8) |
 				((data.charCodeAt(i + 2) & 0xff) << 16) |
 				((data.charCodeAt(i + 3) & 0xff) << 24);
 
@@ -50,7 +50,7 @@ var MurmurHash3 = {
 
 		k1 = 0;
 
-		switch(len % 4) {
+		switch (len % 4) {
 			case 3:
 				k1 = (data.charCodeAt(roundedEnd + 2) & 0xff) << 16;
 				// fallthrough
@@ -96,7 +96,7 @@ var MurmurHash3 = {
 			h1 = (h1 * 5 + 0xe6546b64) | 0;
 		}
 
-		if((len % 2) == 1) {
+		if ((len % 2) == 1) {
 			k1 = data.charCodeAt(roundedEnd);
 			k1 = this.mul32(k1, c1);
 			k1 = ((k1 & 0x1ffff) << 15) | (k1 >>> 17);  // ROTL32(k1,15);
@@ -118,7 +118,7 @@ var MurmurHash3 = {
 	}
 };
 
-if(typeof module !== "undefined" && typeof module.exports !== "undefined") {
+if (typeof module !== "undefined" && typeof module.exports !== "undefined") {
 	module.exports = MurmurHash3;
 }
 });

@@ -40,9 +40,9 @@ define(function (require, exports, module) {
     var Tokenizer = require("./HTMLTokenizer").Tokenizer,
         MurmurHash3 = require("./murmurhash3_gc"),
         PerfUtils = { //require("utils/PerfUtils");
-            markStart: function(){},
-            finalizeMeasurement: function(){},
-            addMeasurement: function(){}
+            markStart: function() {},
+            finalizeMeasurement: function() {},
+            addMeasurement: function() {}
         };
     
     var seed = Math.floor(Math.random() * 65535);
@@ -67,12 +67,12 @@ define(function (require, exports, module) {
         fieldset: { p: true },
         footer: { p: true },
         form: { p: true },
-        h1      : { p: true },
-        h2      : { p: true },
-        h3      : { p: true },
-        h4      : { p: true },
-        h5      : { p: true },
-        h6      : { p: true },
+        h1: { p: true },
+        h2: { p: true },
+        h3: { p: true },
+        h4: { p: true },
+        h5: { p: true },
+        h6: { p: true },
         header: { p: true },
         hgroup: { p: true },
         hr: { p: true },
@@ -222,7 +222,7 @@ define(function (require, exports, module) {
      * Adds two {row, column}-style positions, returning a new pos.
      */
     function _addPos(pos1, pos2) {
-        return {row: pos1.row + pos2.row, column: (pos2.row === 0 ? pos1.column + pos2.column : pos2.column)};
+        return { row: pos1.row + pos2.row, column: (pos2.row === 0 ? pos1.column + pos2.column : pos2.column) };
     }
     
     /**
@@ -232,7 +232,7 @@ define(function (require, exports, module) {
      * pos. Not for general purpose use as it does not account for line boundaries.
      */
     function _offsetPos(pos, offset) {
-        return {row: pos.row, column: pos.column + offset};
+        return { row: pos.row, column: pos.column + offset };
     }
     
     /**
@@ -252,7 +252,7 @@ define(function (require, exports, module) {
         this.t = new Tokenizer(text);
         this.currentTag = null;
         this.startOffset = startOffset || 0;
-        this.startOffsetPos = startOffsetPos || {row: 0, column: 0};
+        this.startOffsetPos = startOffsetPos || { row: 0, column: 0 };
     }
 
     Builder.prototype._logError = function (token) {
@@ -469,7 +469,7 @@ define(function (require, exports, module) {
                 // tokenizer for this since it may not get to the very end)
                 // TODO: should probably make the tokenizer get to the end...
                 var lines = this.text.split("\n"),
-                    lastPos = {row: lines.length - 1, column: lines[lines.length - 1].length};
+                    lastPos = { row: lines.length - 1, column: lines[lines.length - 1].length };
                 while (stack.length) {
                     closeTag(this.text.length, lastPos);
                 }
